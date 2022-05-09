@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { Cliente } from '../cliente';
 import { ClientesService } from 'src/app/clientes.service';
+import { Router, ActivatedRoute } from '@angular/router';
+
 
 @Component({
   selector: 'app-clientes-form',
@@ -12,25 +14,55 @@ export class ClientesFormComponent implements OnInit {
   cliente: Cliente;
   success: boolean = false;
   errors: String[] = [];
+  id: number = 0;
 
-  constructor(private service: ClientesService) { 
+  constructor(
+    private service: ClientesService, 
+    private router: Router,
+    private activatedRoute: ActivatedRoute) { 
     this.cliente = new Cliente();
   }
 
   ngOnInit(): void {
+    this.activatedRoute.params
+      .subscribe( params => {      
+        if (params && params['id'] ){
+          this.service.getClienteById(params.id)
+            .subscribe(
+              response => this.cliente = response,
+              errorResponse => this.cliente = new Cliente
+            )}
+    })
+  }
+
+  voltarParaListagem(){
+    this.router.navigate(['/clientes-lista'])
   }
 
   onSubmit(){
-    this.service
-      .salvar(this.cliente)
-      .subscribe( response => {
-        this.success = true;
-        this.errors = [];
-        this.cliente = response;
-      } , errorResponse => {
-        this.success = false;
-        this.errors = errorResponse.error.errors;
-      })
+
+    if(this.id){
+      this.service
+        .atualizar(this.cliente)
+          .subscribe( response => {
+            this.success = true;
+            this.errors = [];
+          }, errorResponse => {
+            this.success = false;
+            this.errors = ['Erro ao atualizar o cliente.'];
+          })
+    } else {
+      this.service
+        .salvar(this.cliente)
+          .subscribe( response => {
+            this.success = true;
+            this.errors = [];
+            this.cliente = response;
+          } , errorResponse => {
+            this.success = false;
+            this.errors = errorResponse.error.errors;
+          })
+    }
   }
 
 }
